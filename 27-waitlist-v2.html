@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>27 — Waitlist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-primary: #ffffff;
+            --text-secondary: #9a9a9a;
+            --accent-white: #ffffff;
+            --accent-glow: rgba(255, 255, 255, 0.35);
+            --leather-dark: #111111;
+            --leather-mid: #1c1c1c;
+            --paper-color: #f2f2f2;
+            --paper-edge: #cccccc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.08) 0%, rgba(5, 5, 5, 1) 65%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+        }
+
+        /* Ambient subtle grain */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        header {
+            padding-top: 44px;
+            text-align: center;
+            z-index: 10;
+            letter-spacing: 0.35em;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            opacity: 0.95;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+        }
+
+        /* 3D Scene Container */
+        .stage {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1400px;
+            z-index: 5;
+        }
+
+        /* Ambient Backlight Halo behind Journal */
+        .journal-aura {
+            position: absolute;
+            width: 340px;
+            height: 440px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0) 72%);
+            filter: blur(28px);
+            pointer-events: none;
+            animation: auraPulse 6s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes auraPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.85;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        /* Floating Animation Wrapper */
+        .float-wrapper {
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 2;
+        }
+
+        .float-wrapper:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotateZ(-2deg);
+            }
+            50% {
+                transform: translateY(-18px) rotateZ(1.5deg);
+            }
+        }
+
+        /* 3D Book Object */
+        .journal {
+            position: relative;
+            width: 260px;
+            height: 360px;
+            transform-style: preserve-3d;
+            transform: rotateX(14deg) rotateY(-24deg);
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .float-wrapper:hover .journal {
+            transform: rotateX(8deg) rotateY(-12deg) scale(1.04);
+        }
+
+        .journal.opened {
+            transform: rotateX(5deg) rotateY(0deg) scale(1.06);
+        }
+
+        /* Soft luminous floor reflection */
+        .journal-shadow {
+            position: absolute;
+            width: 250px;
+            height: 44px;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 72%);
+            bottom: -75px;
+            left: 50%;
+            transform: translateX(-50%) rotateX(75deg);
+            filter: blur(10px);
+            animation: shadowPulse 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shadowPulse {
+            0%, 100% {
+                transform: translateX(-50%) rotateX(75deg) scale(1);
+                opacity: 0.75;
+            }
+            50% {
+                transform: translateX(-50%) rotateX(75deg) scale(0.84);
+                opacity: 0.45;
+            }
+        }
+
+        /* Book Dimensions: Width 260px, Height 360px, Depth 36px */
+        .face {
+            position: absolute;
+            backface-visibility: visible;
+        }
+
+        /* Front Cover */
+        .cover-front {
+            width: 260px;
+            height: 360px;
+            background: linear-gradient(135deg, #222222 0%, #101010 60%, #080808 100%);
+            border-radius: 3px 12px 12px 3px;
+            transform: translateZ(18px);
+            box-shadow: 
+                inset 2px 0 6px rgba(255, 255, 255, 0.22),
+                inset -2px -2px 10px rgba(0, 0, 0, 0.9),
+                0 0 38px rgba(255, 255, 255, 0.24),
+                0 0 75px rgba(255, 255, 255, 0.12);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.32);
+            overflow: hidden;
+            transition: box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+
+        .float-wrapper:hover .cover-front {
+            border-color: rgba(255, 255, 255, 0.55);
+            box-shadow: 
+                inset 2px 0 8px rgba(255, 255, 255, 0.3),
+                inset -2px -2px 10px rgba(0, 0, 0, 0.9),
+                0 0 48px rgba(255, 255, 255, 0.36),
+                0 0 95px rgba(255, 255, 255, 0.18);
+        }
+
+        /* Subtle grain overlay */
+        .cover-front::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 0);
+            background-size: 4px 4px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Spine Crease Groove */
+        .cover-front::after {
+            content: "";
+            position: absolute;
+            left: 16px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(255,255,255,0.18));
+        }
+
+        /* Debossed Frame */
+        .cover-frame {
+            position: absolute;
+            inset: 22px 22px 22px 32px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 2px 8px 8px 2px;
+            box-shadow: 0 0 14px rgba(255, 255, 255, 0.12), inset 0 0 14px rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
+        /* Luminous Silver-White "27" */
+        .emblem {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 4.6rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 48%, #a8a8a8 75%, #ffffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.55));
+            margin-left: 10px;
+            position: relative;
+        }
+
+        /* Elastic Closure Band */
+        .elastic-band {
+            position: absolute;
+            right: 26px;
+            top: -1px;
+            bottom: -1px;
+            width: 14px;
+            background: linear-gradient(to right, #080808, #1f1f1f, #050505);
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            border-right: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: -2px 0 6px rgba(0,0,0,0.85), 2px 0 5px rgba(0,0,0,0.7);
+            z-index: 3;
+        }
+
+        /* Back Cover */
+        .cover-back {
+            width: 260px;
+            height: 360px;
+            background: #0d0d0d;
+            border-radius: 12px 3px 3px 12px;
+            transform: rotateY(180deg) translateZ(18px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 0 36px rgba(255, 255, 255, 0.18);
+        }
+
+        /* Spine (Left Side) */
+        .spine {
+            width: 36px;
+            height: 360px;
+            left: -18px;
+            background: linear-gradient(to right, #0c0c0c 0%, #242424 45%, #111111 100%);
+            transform: rotateY(-90deg);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 36px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.85), 0 0 28px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Spine Ribs */
+        .spine-rib {
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.22), rgba(0,0,0,0.9));
+        }
+
+        .spine-title {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1rem;
+            letter-spacing: 0.25em;
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
+        }
+
+        /* Pages Block (Right Edge) */
+        .pages-right {
+            width: 32px;
+            height: 348px;
+            top: 6px;
+            right: -14px;
+            background: repeating-linear-gradient(
+                to right,
+                #ffffff 0px,
+                #d4d4d4 1.5px,
+                #f5f5f5 3px
+            );
+            transform: rotateY(90deg);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 0 26px rgba(255, 255, 255, 0.35);
+            border-radius: 1px;
+        }
+
+        /* Pages Block (Top Edge) */
+        .pages-top {
+            width: 252px;
+            height: 32px;
+            top: -14px;
+            left: 2px;
+            background: repeating-linear-gradient(
+                to bottom,
+                #fafafa 0px,
+                #cfcfcf 1.5px,
+                #f5f5f5 3px
+            );
+            transform: rotateX(90deg);
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2), 0 0 22px rgba(255, 255, 255, 0.28);
+        }
+
+        /* Pages Block (Bottom Edge) */
+        .pages-bottom {
+            width: 252px;
+            height: 32px;
+            bottom: -14px;
+            left: 2px;
+            background: repeating-linear-gradient(
+                to bottom,
+                #eaeaea 0px,
+                #c4c4c4 1.5px,
+                #efefef 3px
+            );
+            transform: rotateX(-90deg);
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.25), 0 0 22px rgba(255, 255, 255, 0.28);
+        }
+
+        /* Monochrome Bookmark Ribbon */
+        .ribbon {
+            position: absolute;
+            bottom: -24px;
+            left: 48px;
+            width: 10px;
+            height: 32px;
+            background: linear-gradient(to bottom, #ffffff, #a3a3a3);
+            transform: translateZ(0px) rotateZ(4deg);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+            box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+        }
+
+        /* Prompt Hint Below Journal */
+        .hint {
+            padding-bottom: 48px;
+            text-align: center;
+            z-index: 10;
+            transition: opacity 0.4s ease;
+        }
+
+        .hint span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(15, 15, 15, 0.65);
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hint span:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.45);
+            box-shadow: 0 0 22px rgba(255, 255, 255, 0.18);
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            box-shadow: 0 0 8px #ffffff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.8); }
+        }
+
+        /* Waitlist Modal Overlay */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 20px;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Monochrome Waitlist Card */
+        .modal-card {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            background: #0c0c0c;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 16px;
+            padding: 44px 36px 38px;
+            box-shadow: 
+                0 25px 60px -15px rgba(0, 0, 0, 0.95),
+                0 0 45px rgba(255, 255, 255, 0.12);
+            transform: translateY(24px) scale(0.96);
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: text;
+        }
+
+        .modal-backdrop.active .modal-card {
+            transform: translateY(0) scale(1);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 6px;
+            transition: color 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .modal-number {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.6rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .modal-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.65rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 13px 15px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(154, 154, 154, 0.45);
+        }
+
+        .form-group input:focus {
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.14);
+        }
+
+        .submit-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 14px;
+            background: #ffffff;
+            color: #050505;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease;
+        }
+
+        .submit-btn:hover {
+            background: #f0f0f0;
+            box-shadow: 0 0 26px rgba(255, 255, 255, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Success State */
+        .success-state {
+            display: none;
+            text-align: center;
+            padding: 12px 0 6px;
+        }
+
+        .success-state.visible {
+            display: block;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .check-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            color: #ffffff;
+            font-size: 1.3rem;
+        }
+
+        .entry-badge {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <header>27</header>
+
+    <main class="stage">
+        <div class="journal-aura"></div>
+        <div class="float-wrapper" id="journalTrigger" role="button" tabindex="0" aria-label="Open 27 journal to join the waitlist">
+            <div class="journal" id="journalBook">
+                <!-- Spine -->
+                <div class="face spine">
+                    <div class="spine-rib"></div>
+                    <div class="spine-rib"></div>
+                    <span class="spine-title">27</span>
+                    <div class="spine-rib"></div>
+                    <div class="spine-rib"></div>
+                </div>
+
+                <!-- Back Cover -->
+                <div class="face cover-back"></div>
+
+                <!-- Page Edges -->
+                <div class="face pages-right"></div>
+                <div class="face pages-top"></div>
+                <div class="face pages-bottom"></div>
+
+                <!-- Ribbon -->
+                <div class="ribbon"></div>
+
+                <!-- Front Cover -->
+                <div class="face cover-front">
+                    <div class="cover-frame"></div>
+                    <div class="elastic-band"></div>
+                    <div class="emblem">27</div>
+                </div>
+            </div>
+            <div class="journal-shadow"></div>
+        </div>
+    </main>
+
+    <footer class="hint" id="hintTrigger">
+        <span><i class="pulse-dot"></i> Click the journal to join the waitlist</span>
+    </footer>
+
+    <!-- Waitlist Modal -->
+    <div class="modal-backdrop" id="waitlistModal" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalHeading">
+            <button class="close-btn" id="closeModal" aria-label="Close modal">&times;</button>
+
+            <div id="formContainer">
+                <div class="modal-header">
+                    <div class="modal-number">27</div>
+                    <h2 class="modal-title" id="modalHeading">Reserve Your Copy</h2>
+                    <p class="modal-subtitle">Enter your name and email to request early access to the private release.</p>
+                </div>
+
+                <form id="waitlistForm">
+                    <div class="form-group">
+                        <label for="userName">Full Name</label>
+                        <input type="text" id="userName" name="name" placeholder="Ada Lovelace" required autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userEmail">Email Address</label>
+                        <input type="email" id="userEmail" name="email" placeholder="ada@example.com" required autocomplete="email">
+                    </div>
+
+                    <button type="submit" class="submit-btn">Join the Waitlist</button>
+                </form>
+            </div>
+
+            <div class="success-state" id="successState">
+                <div class="check-circle">&#10003;</div>
+                <h2 class="modal-title">You're on the list</h2>
+                <p class="modal-subtitle" id="confirmationText">Thank you. We will notify you before the pages open.</p>
+                <div class="entry-badge" id="entryNumber">Entry #0028</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const journalTrigger = document.getElementById('journalTrigger');
+        const journalBook = document.getElementById('journalBook');
+        const hintTrigger = document.getElementById('hintTrigger');
+        const waitlistModal = document.getElementById('waitlistModal');
+        const closeModal = document.getElementById('closeModal');
+        const waitlistForm = document.getElementById('waitlistForm');
+        const formContainer = document.getElementById('formContainer');
+        const successState = document.getElementById('successState');
+        const confirmationText = document.getElementById('confirmationText');
+        const entryNumber = document.getElementById('entryNumber');
+        const nameInput = document.getElementById('userName');
+
+        let isModalOpen = false;
+
+        // Subtle 3D tilt following cursor
+        document.addEventListener('mousemove', (e) => {
+            if (isModalOpen) return;
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 28;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 28;
+            journalBook.style.transform = `rotateX(${12 + yAxis}deg) rotateY(${-20 - xAxis}deg)`;
+        });
+
+        document.addEventListener('mouseleave', () => {
+            if (isModalOpen) return;
+            journalBook.style.transform = `rotateX(14deg) rotateY(-24deg)`;
+        });
+
+        function openWaitlist() {
+            isModalOpen = true;
+            journalBook.classList.add('opened');
+            waitlistModal.classList.add('active');
+            waitlistModal.setAttribute('aria-hidden', 'false');
+            setTimeout(() => {
+                if (formContainer.style.display !== 'none') {
+                    nameInput.focus();
+                }
+            }, 250);
+        }
+
+        function closeWaitlist() {
+            isModalOpen = false;
+            journalBook.classList.remove('opened');
+            waitlistModal.classList.remove('active');
+            waitlistModal.setAttribute('aria-hidden', 'true');
+            journalBook.style.transform = `rotateX(14deg) rotateY(-24deg)`;
+        }
+
+        journalTrigger.addEventListener('click', openWaitlist);
+        hintTrigger.addEventListener('click', openWaitlist);
+        journalTrigger.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openWaitlist();
+            }
+        });
+
+        closeModal.addEventListener('click', closeWaitlist);
+
+        waitlistModal.addEventListener('click', (e) => {
+            if (e.target === waitlistModal) {
+                closeWaitlist();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isModalOpen) {
+                closeWaitlist();
+            }
+        });
+
+        waitlistForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = nameInput.value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+
+            if (!name || !email) return;
+
+            // Store locally in browser storage
+            const entries = JSON.parse(localStorage.getItem('27_waitlist') || '[]');
+            entries.push({ name, email, timestamp: new Date().toISOString() });
+            localStorage.setItem('27_waitlist', JSON.stringify(entries));
+
+            const spot = String(27 + entries.length).padStart(4, '0');
+            confirmationText.textContent = `Thank you, ${name}. We've reserved your spot and will reach out to ${email} when 27 opens.`;
+            entryNumber.textContent = `Entry #${spot}`;
+
+            formContainer.style.display = 'none';
+            successState.classList.add('visible');
+        });
+    </script>
+</body>
+</html>
